@@ -20,16 +20,16 @@ data Item = Item
 instance Ord Item where
   compare a b = compare (timestamp a) (timestamp b)
 
-fromItem :: Item -> Text
-fromItem (Item t d c) =
-  sformat (": " % int % ":" % int % ";" % string) t d c
-
 toItem :: Parser Item
 toItem = do
   t <- char ':' *> many1 space *> decimal
   d <- char ':' *> decimal
   c <- char ';' *> many1 anyChar
   return $ Item t d c
+
+fromItem :: Item -> Text
+fromItem (Item t d c) =
+  sformat (": " % int % ":" % int % ";" % string) t d c
 
 foldFile :: HashMap String Item -> FilePath -> IO (HashMap String Item)
 foldFile itemMap file = do
