@@ -12,6 +12,7 @@ executable zshistory
                      , basic-prelude
                      , conduit
                      , conduit-extra
+                     , directory
                      , formatting
                      , resourcet
                      , unordered-containers
