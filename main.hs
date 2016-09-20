@@ -6,8 +6,8 @@ import           Control.Monad.Trans.Resource
 import           Data.Attoparsec.ByteString       hiding (string)
 import           Data.Attoparsec.ByteString.Char8 hiding (string)
 import           Data.Conduit
-import           Data.Conduit.Binary
-import           Data.Conduit.List                hiding (foldM, map)
+import           Data.Conduit.Binary              hiding (mapM_)
+import           Data.Conduit.List                hiding (foldM, map, mapM_)
 import qualified Data.HashMap.Strict              as Map
 import           Formatting                       hiding (char)
 
@@ -15,10 +15,14 @@ data Item = Item
   { timestamp :: Int
   , duration  :: Int
   , command   :: String
-  } deriving (Show, Eq)
+  } deriving Eq
 
 instance Ord Item where
   compare a b = compare (timestamp a) (timestamp b)
+
+fromItem :: Item -> Text
+fromItem (Item t d c) =
+  sformat (": " % int % ":" % int % ";" % string) t d c
 
 toItem :: Parser Item
 toItem = do
@@ -27,10 +31,10 @@ toItem = do
   c <- char ';' *> many1 anyChar
   return $ Item t d c
 
-foldFile :: HashMap String Item -> String -> IO (HashMap String Item)
-foldFile itemMap arg = do
+foldFile :: HashMap String Item -> FilePath -> IO (HashMap String Item)
+foldFile itemMap file = do
   runResourceT $
-    sourceFile arg   =$=
+    sourceFile file  =$=
       lines          =$=
       mapMaybe e     $$
       fold f itemMap
@@ -42,9 +46,6 @@ foldFile itemMap arg = do
 
 main :: IO ()
 main = do
-  args <- getArgs
+  args    <- getArgs
   itemMap <- foldM foldFile mempty $ map textToString args
-  let items = sort $ Map.elems itemMap
-  forM_ items $ \item ->
-     putStrLn $ sformat (": " % int % ":" % int % ";" % string)
-       (timestamp item) (duration item) (command item)
+  mapM_ (putStrLn . fromItem) $ sort $ Map.elems itemMap
